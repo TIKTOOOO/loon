@@ -1,0 +1,10 @@
+# 微信直连
+# 自用直连补丁；引用时设置 policy=DIRECT；更新：2026-10-16
+DOMAIN-SUFFIX,wx.qq.com
+DOMAIN-SUFFIX,weixin.qq.com
+DOMAIN-SUFFIX,wechatapp.com
+DOMAIN-SUFFIX,wechat.com
+DOMAIN-SUFFIX,wxapp.tc.qq.com
+DOMAIN-SUFFIX,wechatpay.com
+DOMAIN-SUFFIX,tenpay.com
+DOMAIN-SUFFIX,servicewechat.com
