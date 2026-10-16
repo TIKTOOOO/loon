@@ -1,0 +1,15 @@
+#!name=携程开屏广告补丁
+#!desc=携程广告接口精确拦截；需要启用 MITM 并安装、信任本地证书。
+#!author=TIKTOOOO
+#!homepage=https://github.com/TIKTOOOO/loon
+#!date=2026-10-16
+# 来源：既有自用配置中的携程补丁；规则参考 blackmatrix7/ios_rule_script。
+# 参考：https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/Advertising/Advertising.plugin
+
+[Rewrite]
+^https?:\/\/m\.ctrip\.com\/restapi\/soa2\/13916\/(?:json\/|scjson\/)?tripAds reject-dict
+^https?:\/\/m\.ctrip\.com\/restapi\/soa2\/\d+\/json\/getAdsList reject-200
+^https?:\/\/ma-adx\.ctrip\.com\/_ma\.gif reject
+
+[Mitm]
+hostname = m.ctrip.com,ma-adx.ctrip.com
