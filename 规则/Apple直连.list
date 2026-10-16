@@ -1,0 +1,10 @@
+# Apple直连
+# 自用直连补丁；引用时设置 policy=DIRECT；更新：2026-10-16
+DOMAIN-SUFFIX,mzstatic.com
+DOMAIN-SUFFIX,itunes.apple.com
+DOMAIN-SUFFIX,apps.apple.com
+DOMAIN-SUFFIX,appldnld.apple.com
+DOMAIN-SUFFIX,cdn-apple.com
+DOMAIN-SUFFIX,aaplimg.com
+DOMAIN-SUFFIX,ppq.apple.com
+DOMAIN-SUFFIX,cmc.apple.com
