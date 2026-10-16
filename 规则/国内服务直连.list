@@ -1,0 +1,8 @@
+# 国内服务直连
+# 自用直连补丁；引用时设置 policy=DIRECT；更新：2026-10-16
+DOMAIN-SUFFIX,kelee.one
+DOMAIN-SUFFIX,qpic.cn
+DOMAIN-SUFFIX,qlogo.cn
+DOMAIN-SUFFIX,idqqimg.com
+DOMAIN-SUFFIX,autonavi.com
+DOMAIN-SUFFIX,amap.com
