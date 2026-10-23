@@ -10,6 +10,11 @@
 | 规则/微信直连.list | 直连补丁 | [Raw](https://raw.githubusercontent.com/TIKTOOOO/loon/main/%E8%A7%84%E5%88%99/%E5%BE%AE%E4%BF%A1%E7%9B%B4%E8%BF%9E.list) |
 | 规则/国内服务直连.list | 直连补丁 | [Raw](https://raw.githubusercontent.com/TIKTOOOO/loon/main/%E8%A7%84%E5%88%99/%E5%9B%BD%E5%86%85%E6%9C%8D%E5%8A%A1%E7%9B%B4%E8%BF%9E.list) |
 | 插件/携程开屏广告补丁.lpx | 携程广告精确拦截 | [Raw](https://raw.githubusercontent.com/TIKTOOOO/loon/main/%E6%8F%92%E4%BB%B6/%E6%90%BA%E7%A8%8B%E5%BC%80%E5%B1%8F%E5%B9%BF%E5%91%8A%E8%A1%A5%E4%B8%81.lpx) |
+| 插件/wechat_noads.lpx | 微信广告部分过滤（覆盖限制见说明） | [Raw](https://raw.githubusercontent.com/TIKTOOOO/loon/main/%E6%8F%92%E4%BB%B6/wechat_noads.lpx) |
+
+## 微信广告插件
+
+[wechat_noads 使用说明与一键导入](wechat_noads.md)。支持公众号文章接口和部分小程序独立广告；公众号列表、视频号、朋友圈广告卡片未实现可靠清除，尚待真机验证。
 
 ## 引用方式
 

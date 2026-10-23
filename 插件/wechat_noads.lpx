@@ -1,0 +1,31 @@
+#!name=wechat_noads
+#!desc=微信广告过滤（部分覆盖）：公众号文章广告、部分小程序广告；不承诺清除公众号列表、视频号和朋友圈广告。需要 MITM，详见使用说明。
+#!author=TIKTOOOO
+#!homepage=https://github.com/TIKTOOOO/loon/blob/main/wechat_noads.md
+#!date=2026-10-23
+# v1.0.0；兼容 Loon 旧版 Rewrite 语法，新版继续兼容。
+# 独立编写的精确匹配配置；接口依据与限制见 wechat_noads.md。
+# 不读取聊天、账号或支付数据；无远程脚本。
+
+[Rule]
+# 社区规则识别的广告素材域名；可能同时影响其他腾讯系 App。
+# 如遇视频/小程序加载异常，先关闭本插件，勿扩大到 wxs.qq.com。
+DOMAIN,wxsnsdy.wxs.qq.com,REJECT
+DOMAIN,wxsmsdy.video.qq.com,REJECT
+DOMAIN,wxsnsdythumb.wxs.qq.com,REJECT
+# 部分商户小程序的独立广告服务。
+DOMAIN,ads-shopping.shouqianba.com,REJECT
+DOMAIN,ad.maoyan.com,REJECT
+DOMAIN,e.jparking.cn,REJECT
+
+[Rewrite]
+# 公众号文章中/底部的平台广告：仅替换广告字段，保留响应其他字段。
+^https?:\/\/mp\.weixin\.qq\.com\/mp\/getappmsgad(?:\?|$) response-body-json-replace advertisement_num 0 advertisement_info []
+# 公众号文章商品推广；不移除作者手写推广和图片。
+^https?:\/\/mp\.weixin\.qq\.com\/mp\/cps_product_info(?:\?|$) reject-dict
+# 部分企迈点单小程序的独立广告请求；不修改菜单和订单接口。
+^https?:\/\/webapi\.qmai\.cn\/web\/catering\/advertising\/[^?#]*(?:\?[^#]*)?$ reject-dict
+^https?:\/\/webapi\.qmai\.cn\/web\/cmk-center\/marketing\/canvas\/advert-reach(?:\?|$) reject-dict
+
+[Mitm]
+hostname = mp.weixin.qq.com,webapi.qmai.cn
