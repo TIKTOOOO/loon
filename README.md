@@ -11,6 +11,11 @@
 | 规则/国内服务直连.list | 直连补丁 | [Raw](https://raw.githubusercontent.com/TIKTOOOO/loon/main/%E8%A7%84%E5%88%99/%E5%9B%BD%E5%86%85%E6%9C%8D%E5%8A%A1%E7%9B%B4%E8%BF%9E.list) |
 | 插件/携程开屏广告补丁.lpx | 携程广告精确拦截 | [Raw](https://raw.githubusercontent.com/TIKTOOOO/loon/main/%E6%8F%92%E4%BB%B6/%E6%90%BA%E7%A8%8B%E5%BC%80%E5%B1%8F%E5%B9%BF%E5%91%8A%E8%A1%A5%E4%B8%81.lpx) |
 | 插件/wechat_noads.lpx | 微信广告部分过滤（覆盖限制见说明） | [Raw](https://raw.githubusercontent.com/TIKTOOOO/loon/main/%E6%8F%92%E4%BB%B6/wechat_noads.lpx) |
+| 插件/twitter_noads.lpx | X / Twitter 信息流推广过滤 | [Raw](https://raw.githubusercontent.com/TIKTOOOO/loon/main/%E6%8F%92%E4%BB%B6/twitter_noads.lpx) |
+
+## X / Twitter 广告插件
+
+[twitter_noads 使用说明与一键导入](twitter_noads.md)。通过本仓库脚本过滤明确标记的推广条目，需启用 MITM；尚待 App 真机验证。
 
 ## 微信广告插件
 

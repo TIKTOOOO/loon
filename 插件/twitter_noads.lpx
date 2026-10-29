@@ -1,0 +1,13 @@
+#!name=twitter_noads
+#!desc=X / Twitter 信息流去推广广告：过滤可识别的推广条目。需开启 MITM 并信任证书；App 版本适配及限制见说明，未承诺全部广告。
+#!author=TIKTOOOO
+#!homepage=https://github.com/TIKTOOOO/loon/blob/main/twitter_noads.md
+#!date=2026-10-29
+# v1.0.0；原生 App 为主要目标。没有当前 App 抓包，尚待真机验证。
+# 使用兼容旧语法；脚本在本机处理响应，不上传数据。
+
+[Script]
+http-response ^https:\/\/(?:api\.)?(?:twitter|x)\.com\/(?:i\/api\/)?(?:graphql\/[^/?]+\/(?:HomeTimeline|HomeLatestTimeline|TweetDetail|TweetDetailWithInjections|SearchTimeline|UserTweets|UserTweetsAndReplies|UserMedia|ListLatestTweetsTimeline|Bookmarks|ExploreTimeline)(?:\?|$)|2\/timeline\/(?:home|profile|conversation\/[^/?]+)\.json(?:\?|$)) script-path=https://raw.githubusercontent.com/TIKTOOOO/loon/main/%E6%8F%92%E4%BB%B6/scripts/twitter_noads.js, requires-body=true, timeout=10, tag=X推广过滤
+
+[Mitm]
+hostname = api.twitter.com,api.x.com,twitter.com,x.com
