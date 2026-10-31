@@ -58,3 +58,7 @@ Loon 3.0.3 及以上的规则来源优先级：本地规则 > 插件规则 > 订
 携程规则参考：[blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script/blob/master/rewrite/Loon/Advertising/Advertising.plugin)，相关上游内容权利归原作者，使用和再分发应遵循其许可。
 
 语法和优先级参考：[Loon 规则](https://nsloon.app/docs/Rule/)、[订阅规则](https://nsloon.app/docs/Rule/sub_rule/)、[插件](https://nsloon.app/docs/Plugin/)。
+
+## 自用定位插件
+
+[安装与部署说明](location-spoofer/README.md) · [地图分享快捷指令](location-spoofer/SHORTCUT.md)。真机验证状态见说明；关闭修改不等于立即清除系统缓存。

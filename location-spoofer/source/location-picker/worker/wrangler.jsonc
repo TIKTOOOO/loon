@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ios-location-picker",
+  "main": "src/index.js",
+  "compatibility_date": "2026-01-01",
+  "workers_dev": true,
+  // 首次部署前执行: npx wrangler kv namespace create LOC_KV
+  // 把输出的 id 填到下方（preview_id 用于 wrangler dev）
+  "kv_namespaces": [
+    {
+      "binding": "LOC_KV",
+      "id": "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "ios-location-picker-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "build:webui": "node ../../tools/bundle-worker.mjs",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "wrangler": "4.156.0"
+  }
+}
