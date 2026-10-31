@@ -1,4 +1,4 @@
-// TIKTOOOO customization 2026-10-31: local disable wins; redact credentials. AGPL-3.0.
+// TIKTOOOO customization 2026-11-01: remote-only control; default pass-through. AGPL-3.0.
 /*
  * iOS 12 compatibility build. The protobuf int64 implementation deliberately
  * avoids BigInt syntax so JavaScriptCore on iOS 12 can parse this file.
@@ -14,7 +14,7 @@
   "use strict";
 
   var DEFAULT_CONFIG = {
-    enabled: true,
+    enabled: false,
     mode: "response",
     latitude: 37.3349,
     longitude: -122.00902,
@@ -519,7 +519,7 @@
       }
     }
 
-    cfg.enabled = parseBoolean(cfg.enabled, true);
+    cfg.enabled = parseBoolean(cfg.enabled, false);
     cfg.failOpen = parseBoolean(cfg.failOpen, true);
     var mode = String(cfg.mode || "response").toLowerCase();
     cfg.mode = mode === "request" || mode === "prepare" || mode === "probe" || mode === "inspect" ? mode : "response";
@@ -1094,8 +1094,8 @@
       return;
     }
     var args = readScriptArguments();
-    console.log("Location spoofer args: localEnabled=" + parseBoolean(args.enabled, true) +
-      ", remoteConfigured=" + !!resolveConfigUrl(args) + ", credentials=redacted");
+    console.log("Location spoofer args: control=remote-only, remoteConfigured=" +
+      !!resolveConfigUrl(args) + ", credentials=redacted");
   }
 
   function detectRuntime() {
@@ -1324,6 +1324,7 @@
 
   function validRemoteConfig(data) {
     if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+    if (typeof data.enabled !== "boolean") return false;
     if (data.enabled === false) return true;
     return typeof data.latitude === "number" && typeof data.longitude === "number" &&
       Number.isFinite(data.latitude) && Number.isFinite(data.longitude) &&
@@ -1343,7 +1344,8 @@
       if (!entry || entry.url !== url || !validRemoteConfig(entry.data)) {
         return null;
       }
-      if (Date.now() - entry.ts > 300000) {
+      if (typeof entry.ts !== "number" || !Number.isFinite(entry.ts) ||
+          Date.now() - entry.ts < 0 || Date.now() - entry.ts > 300000) {
         return null;
       }
       return entry.data;
@@ -1426,18 +1428,13 @@
 
   function loadRuntimeConfigSync() {
     var args = readScriptArguments();
-    var cfg = mergeConfig(DEFAULT_CONFIG, configFromArgs(args));
+    var cfg = mergeConfig(DEFAULT_CONFIG, { debug: parseBoolean(args.debug, false) });
     var configUrl = resolveConfigUrl(args);
     var debug = parseBoolean(cfg.debug, false);
-    var address = String(args.address || "").trim();
-
-    cfg.configSource = "manual";
-    if (!parseBoolean(args.enabled, true)) {
-      cfg.enabled = false;
-      cfg.configSource = "local-disabled";
-      return { cfg: cfg, configUrl: "", debug: debug };
-    }
-    applyAddressFromCache(cfg, address, debug);
+    // Only a validated remote configuration (or its short-lived cache) may enable rewriting.
+    // Ignore legacy local enabled/coordinate arguments left in Loon after a plugin update.
+    cfg.enabled = false;
+    cfg.configSource = configUrl ? "remote-unavailable" : "remote-unconfigured";
 
     if (configUrl) {
       var remoteCfg = readRemoteConfigCache(configUrl);
@@ -1996,31 +1993,21 @@
       return;
     }
 
-    if (hasRequest && !hasResponse) {
-      var prepArgs = readScriptArguments();
-      if (!parseBoolean(prepArgs.enabled, true)) {
-        if (parseBoolean(prepArgs.debug, false)) {
-          console.log("Location spoofer localEnabled=false phase=request action=pass-through");
-        }
-        donePassThrough();
-        return;
-      }
-      if (parseBoolean(prepArgs.debug, false)) {
-        console.log("Location spoofer prepare -> Accept-Encoding: identity");
-      }
-      donePreparedRequestPassThrough();
-      return;
-    }
-
     loadRuntimeConfig(function (config) {
       try {
         if (config.debug) {
-          console.log("Location spoofer source=" + config.configSource + ", enabled=" + config.enabled +
+          console.log("Location spoofer phase=" + (hasResponse ? "response" : "request") +
+            ", source=" + config.configSource + ", enabled=" + config.enabled +
             ", lat=" + config.latitude + ", lng=" + config.longitude +
-            ", action=" + (config.enabled ? "rewrite-attempt" : "pass-through"));
+            ", action=" + (config.enabled ? (hasResponse ? "rewrite-attempt" : "prepare") : "pass-through"));
         }
         if (!config.enabled) {
           donePassThrough();
+          return;
+        }
+
+        if (!hasResponse) {
+          donePreparedRequestPassThrough();
           return;
         }
 

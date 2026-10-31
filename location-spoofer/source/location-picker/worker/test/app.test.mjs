@@ -61,9 +61,9 @@ test('Redirect loops, timeouts and oversized pages fail', async () => {
   await assert.rejects(parseMap('https://maps.apple.com/place', 'auto', async () => new Response('x'.repeat(262145))));
 });
 function fixture(failWrite = false) {
-  let stored = null, writes = 0;
+  let stored = null, writes = 0, writeFails = failWrite;
   const env = { TOKEN: 'test-only-secret', LOC_KV: { get: async () => stored, put: async (_, data) => {
-    if (failWrite) throw Error('KV unavailable'); stored = data; writes++;
+    if (writeFails) throw Error('KV unavailable'); stored = data; writes++;
   } } };
   async function request(path, data, token = env.TOKEN) {
     const r = await app.fetch(new Request('https://example.test' + path, {
@@ -72,8 +72,29 @@ function fixture(failWrite = false) {
     }), env);
     return { status: r.status, body: await r.json() };
   }
-  return { env, request, writes: () => writes, stored: () => stored };
+  return { env, request, writes: () => writes, stored: () => stored, failWrites: () => { writeFails = true; } };
 }
+test('Default stop, preview-only, repeated stop and save-again form the expected lifecycle', async () => {
+  const f = fixture();
+  assert.equal((await f.request('/loc.json')).body.enabled, false);
+  await f.request('/api/parse', { text: 'https://maps.apple.com/?ll=37.33,-122.01' });
+  assert.equal((await f.request('/loc.json')).body.enabled, false); assert.equal(f.writes(), 0);
+  assert.equal((await f.request('/set', { lat: 1, lng: 2 })).body.enabled, true);
+  for (let i = 0; i < 2; i++) {
+    const stop = await f.request('/enable', { enabled: false });
+    assert.equal(stop.body.ok, true); assert.equal(stop.body.status, 'saved'); assert.equal(stop.body.enabled, false);
+    assert.equal(stop.body.latitude, 1); assert.equal(stop.body.longitude, 2);
+  }
+  assert.equal((await f.request('/set', { lat: 3, lng: 4 })).body.enabled, true);
+});
+test('Wrong token or storage failure during stop preserves the active location', async () => {
+  const f = fixture(); await f.request('/set', { lat: 1, lng: 2 }); const before = f.stored();
+  assert.equal((await f.request('/enable', { enabled: false }, 'wrong')).status, 403);
+  assert.equal(f.stored(), before);
+  f.failWrites(); const failed = await f.request('/enable', { enabled: false });
+  assert.equal(failed.status, 503); assert.equal(failed.body.ok, false); assert.equal(f.stored(), before);
+  assert.equal((await f.request('/loc.json')).body.enabled, true);
+});
 test('Auth, parse-only and bad input never modify coordinates', async () => {
   const f = fixture();
   assert.equal((await f.request('/set', { lat: 1, lng: 2 }, 'wrong')).status, 403);

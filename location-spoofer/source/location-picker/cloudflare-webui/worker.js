@@ -46,7 +46,7 @@ var PAGE = `<!doctype html>
 <div class="bar">
   <input id="sharelink" aria-label="地图分享链接" placeholder="粘贴苹果地图或高德分享链接">
   <select id="shareDatum" aria-label="分享坐标类型"><option value="auto">自动识别</option><option value="wgs84">原始 WGS84</option><option value="gcj02">原始 GCJ02</option></select>
-  <button id="parsebtn" onclick="parseShare()">解析预览</button>
+  <button id="parsebtn" disabled onclick="parseShare()">解析预览</button>
 </div>
 <p style="margin:8px;font-size:13px;line-height:1.6">保存到服务器后，等待 Loon 刷新配置，再手动关闭并开启系统定位服务，打开地图验证。保存成功不代表手机已生效。</p>
 <div id="map"></div>
@@ -55,7 +55,7 @@ var PAGE = `<!doctype html>
   <label>海拔(米)<input id="alt" type="number" inputmode="numeric"></label>
   <label>水平精度<input id="hacc" type="number" inputmode="numeric"></label>
   <label>垂直精度<input id="vacc" type="number" inputmode="numeric"></label>
-  <button id="savebtn">保存定位</button>
+  <button id="savebtn" disabled>保存定位</button>
   <button id="restorebtn">停止修改</button>
   <button id="favadd">收藏此点</button>
   <button id="favlistbtn">我的收藏</button>
@@ -68,11 +68,11 @@ var PAGE = `<!doctype html>
 var token = new URLSearchParams(location.search).get("token") || "";
 function parseShare(){
   var b=document.getElementById("parsebtn"); b.disabled=true;
-  fetch("/api/parse",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+  return fetch("/api/parse",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
     body:JSON.stringify({text:document.getElementById("sharelink").value,datum:document.getElementById("shareDatum").value})})
     .then(function(r){return r.json();}).then(function(d){
       if(!d.ok)throw new Error(d.error||"解析失败");
-      WGS={lat:d.latitude,lng:d.longitude}; saved=false;
+      WGS={lat:d.latitude,lng:d.longitude}; saved=false;previewRevision++;
       var p=dispPos(); marker.setLatLng(p); map.setView(p,16); info();
       toast("已解析预览，请核对图钉，再点保存定位");
     }).catch(function(e){toast(e.message);}).finally(function(){b.disabled=false;});
@@ -114,7 +114,11 @@ var map, marker;
 var WGS = {lat:0, lng:0};
 var datum = "gcj";
 var saved = true;
-var enabledState = true;  // true=伪造中；false=已恢复真实定位（脚本放行）
+var enabledState = null; // 服务器状态；不代表手机系统已采用或恢复。
+var serverLocation = null;
+var configLoaded = false;
+var writeBusy = false;
+var previewRevision = 0;
 
 function $(id){return document.getElementById(id);}
 function toast(t){var e=$("toast");e.textContent=t;e.classList.add("show");setTimeout(function(){e.classList.remove("show");},1800);}
@@ -151,7 +155,7 @@ function applyFavorite(it){
   var lat=Number(it.lat), lng=wrapLng(it.lng);
   if(!Number.isFinite(lat)||!Number.isFinite(lng)){toast("收藏坐标无效");return;}
   WGS={lat:lat,lng:lng};
-  saved=false;
+  saved=false;previewRevision++;
   if(it.alt!=null&&it.alt!=="")$("alt").value=it.alt;
   if(it.hacc!=null&&it.hacc!=="")$("hacc").value=it.hacc;
   if(it.vacc!=null&&it.vacc!=="")$("vacc").value=it.vacc;
@@ -225,33 +229,38 @@ function toggleFavs(){
 }
 
 function info(){
-  if(!enabledState){
-    $("info").textContent = (saved ? "服务器状态：停止修改" : "预览未保存") + " · WGS84 " + WGS.lat.toFixed(6) + ", " + WGS.lng.toFixed(6) + "；不代表手机已恢复真实位置";
-    return;
-  }
-  var tag = saved ? "已保存 ✓" : "未保存 · 点“保存定位”生效";
-  $("info").innerHTML = "<b style='color:"+(saved?"#34c759":"#ff9500")+"'>"+tag+"</b>　WGS-84 "+
-    WGS.lat.toFixed(5)+", "+WGS.lng.toFixed(5)+"　海拔 "+($("alt").value||"?")+"m";
+  var state=enabledState===null ? "服务器状态未知" : (enabledState ? "服务器正在修改" : "服务器已停止修改");
+  var stored=serverLocation ? " · 已存 WGS84 "+serverLocation.latitude.toFixed(6)+", "+serverLocation.longitude.toFixed(6) : "";
+  $("info").textContent=state+stored+"；不代表手机已采用或恢复真实位置。"+
+    (saved ? " 当前图钉已保存。" : " 预览未保存 · 点击“保存定位”才会启用：WGS84 "+WGS.lat.toFixed(6)+", "+WGS.lng.toFixed(6));
 }
 
-// 切换按钮外观：伪造中(灰按钮“恢复真实定位”) / 已恢复(橙按钮“重新开启伪造”)
 function updateEnabledUI(){
-  var b=$("restorebtn");
-  if(enabledState){ b.textContent="停止修改"; b.style.background="#8e8e93"; }
-  else { b.textContent="● 重新开启伪造"; b.style.background="#ff9500"; }
+  $("restorebtn").textContent="停止修改";
+  $("restorebtn").disabled=writeBusy;
+  $("savebtn").disabled=writeBusy||!configLoaded;
+  $("parsebtn").disabled=writeBusy||!configLoaded;
   info();
 }
 
-// 一键切换 伪造/恢复真实
-function toggleEnabled(){
-  var want = !enabledState;
-  fetch("/enable?token="+encodeURIComponent(token),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled:want})})
-    .then(function(r){
-      if(r.ok){ enabledState=want; updateEnabledUI();
-        toast(want ? "服务器已开启，等待 Loon 刷新后手动关开定位验证" : "服务器已停止修改，等待 Loon 刷新后重新获取真实定位"); }
-      else toast("切换失败 "+r.status);
-    })
-    .catch(function(){ toast("网络错误"); });
+function writeConfig(path,payload,expectedEnabled){
+  return fetch(path+"?token="+encodeURIComponent(token),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
+    .then(function(r){if(!r.ok)throw new Error("操作失败 "+r.status);return r.json();})
+    .then(function(d){
+      if(d.ok!==true||d.status!=="saved"||d.enabled!==expectedEnabled)throw new Error("未收到服务器确认，请重试");
+      return d;
+    });
+}
+
+// 幂等、单向停止；再次保存地点才会重新启用。停止不移动尚未保存的预览图钉。
+function stopModification(){
+  if(writeBusy)return;
+  writeBusy=true; updateEnabledUI();
+  return writeConfig("/enable",{enabled:false},false).then(function(){
+    enabledState=false;
+    toast("服务器已停止修改；等待 Loon 刷新后手动关开定位服务，验证真实位置");
+  }).catch(function(e){toast("停止失败："+e.message);})
+    .finally(function(){writeBusy=false;updateEnabledUI();});
 }
 
 function dispPos(){return datum==="gcj"?GCJ.wgs2gcj(WGS.lat,WGS.lng):[WGS.lat,WGS.lng];}
@@ -269,18 +278,24 @@ function movePin(dispLat,dispLng){
   dispLng=wrapLng(dispLng);
   var w=toWgs(dispLat,dispLng);
   WGS={lat:w[0], lng:wrapLng(w[1])};
-  saved=false;
+  saved=false;previewRevision++;
   marker.setLatLng([dispLat,dispLng]);
   info();
   fetchElevation(WGS.lat,WGS.lng).then(function(el){ if(el!==null)$("alt").value=Math.round(el); info(); });
 }
 
 function commit(){
+  if(writeBusy||!configLoaded)return;
+  var revision=previewRevision;
   var payload={lat:WGS.lat, lng:WGS.lng,
     altitude:numOrNull("alt"), horizontalAccuracy:numOrNull("hacc"), verticalAccuracy:numOrNull("vacc")};
-  fetch("/set?token="+encodeURIComponent(token),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
-    .then(function(r){ if(r.ok){ saved=true; enabledState=true; updateEnabledUI(); toast("服务器已保存；等待 Loon 刷新，再关开定位验证"); } else { toast("保存失败 "+r.status); } })
-    .catch(function(){ toast("网络错误"); });
+  writeBusy=true;updateEnabledUI();
+  return writeConfig("/set",payload,true).then(function(){
+    saved=revision===previewRevision; enabledState=true;
+    serverLocation={latitude:payload.lat,longitude:payload.lng};
+    toast("服务器已保存并开启修改；等待 Loon 刷新，再关开定位验证");
+  }).catch(function(e){toast("保存失败："+e.message);})
+    .finally(function(){writeBusy=false;updateEnabledUI();});
 }
 
 function locateCurrent(){
@@ -305,7 +320,7 @@ function locateCurrent(){
       }
 
       WGS={lat:lat,lng:lng};
-      saved=false;
+      saved=false;previewRevision++;
       var p=dispPos();
       marker.setLatLng(p);
       map.setView(p,16);
@@ -354,7 +369,9 @@ function load(){
   fetch("/loc.json?token="+encodeURIComponent(token)).then(function(r){if(!r.ok)throw new Error("读取配置失败 "+r.status);return r.json();}).then(function(d){
     WGS={lat:d.latitude, lng:d.longitude};
     saved=true;
-    enabledState=(d.enabled!==false);
+    if(typeof d.enabled!=="boolean"||!Number.isFinite(d.latitude)||!Number.isFinite(d.longitude))throw new Error("配置无效");
+    enabledState=d.enabled;
+    serverLocation={latitude:d.latitude,longitude:d.longitude};
     $("alt").value=(d.altitude!==undefined?d.altitude:"");
     $("hacc").value=(d.horizontalAccuracy!==undefined?d.horizontalAccuracy:39);
     $("vacc").value=(d.verticalAccuracy!==undefined?d.verticalAccuracy:1000);
@@ -376,6 +393,7 @@ function load(){
     L.control.layers({"高德地图":amapVec,"高德卫星":amapSat,"国外 OSM":osm},null,{collapsed:false}).addTo(map);
 
     marker=L.marker(dispPos(),{draggable:true}).addTo(map);
+    configLoaded=true;
     updateEnabledUI();
     setLocateBusy(false);
 
@@ -389,7 +407,8 @@ $("btn").addEventListener("click",search);
 $("q").addEventListener("keydown",function(e){if(e.key==="Enter")search();});
 $("locatebtn").addEventListener("click",locateCurrent);
 $("savebtn").addEventListener("click",commit);
-$("restorebtn").addEventListener("click",toggleEnabled);
+$("restorebtn").addEventListener("click",stopModification);
+['alt','hacc','vacc'].forEach(function(id){$(id).addEventListener('input',function(){saved=false;previewRevision++;info();});});
 $("favadd").addEventListener("click",addFavorite);
 $("favlistbtn").addEventListener("click",toggleFavs);
 load();

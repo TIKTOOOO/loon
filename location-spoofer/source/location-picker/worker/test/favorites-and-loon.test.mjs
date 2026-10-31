@@ -29,14 +29,11 @@ for (const [label, content] of pages) {
   });
 }
 
-test("Loon plugin exposes editable accuracy arguments", async () => {
+test("Loon plugin exposes only remote connection and debug arguments in both phases", async () => {
   const content = await readFile(loonPath, "utf8");
-  assert.match(content, /horizontalAccuracy\s*=\s*input,"39"/);
-  assert.match(content, /verticalAccuracy\s*=\s*input,"1000"/);
-  assert.match(
-    content,
-    /argument=\[\{enabled\},\{latitude\},\{longitude\},\{altitude\},\{horizontalAccuracy\},\{verticalAccuracy\},\{address\},\{configHost\},\{configToken\},\{configUrl\},\{debug\}\]/,
-  );
+  const args = content.split('[Argument]')[1].split('[Script]')[0];
+  assert.deepEqual([...args.matchAll(/^(\w+)\s*=/gm)].map(m => m[1]), ['configHost', 'configToken', 'configUrl', 'debug']);
+  assert.equal((content.match(/argument=\[\{configHost\},\{configToken\},\{configUrl\},\{debug\}\]/g) || []).length, 3);
+  assert.match(content, /http-request [^\n]*timeout=8/);
   assert.match(content, /script-path=https:\/\/raw\.githubusercontent\.com\/TIKTOOOO\/loon\/main\/插件\/scripts\/ios-location-spoofer\.js/);
-  assert.match(content, /argument=\[\{enabled\},\{debug\}\]/);
 });
