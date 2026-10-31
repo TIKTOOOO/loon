@@ -104,3 +104,12 @@ test('KV failure cannot claim save success; malformed JSON and oversized input r
     assert.equal(response.status, 400);
   }
 });
+test('Map providers receive only the site origin, never the token-bearing page path', async () => {
+  const f = fixture();
+  const page = await app.fetch(new Request('https://example.test/?token=test-only-secret'), f.env);
+  assert.equal(page.status, 200);
+  assert.equal(page.headers.get('Referrer-Policy'), 'origin');
+  const html = await page.text();
+  assert.ok(html.includes('https://tile.openstreetmap.org/{z}/{x}/{y}.png'));
+  assert.ok(html.includes('源码与 AGPL-3.0 许可'));
+});

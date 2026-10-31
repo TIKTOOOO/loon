@@ -9,7 +9,8 @@ export const PAGE = `<!doctype html>
 <style>
   html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
   .bar{padding:8px;display:flex;gap:6px;box-sizing:border-box}
-  .bar input{flex:1;padding:10px;font-size:16px;border:1px solid #ccc;border-radius:8px}
+  .bar input{flex:1;min-width:0;padding:10px;font-size:16px;border:1px solid #ccc;border-radius:8px}
+  .bar select{max-width:110px;font-size:14px}
   .bar button{padding:10px 14px;font-size:16px;border:0;border-radius:8px;background:#007aff;color:#fff}
   .bar button:disabled{opacity:.55}
   .results{margin:0 8px;border:1px solid #e2e2e2;border-radius:8px;max-height:34vh;overflow:auto;display:none}
@@ -58,6 +59,7 @@ export const PAGE = `<!doctype html>
   <button id="favlistbtn">我的收藏</button>
 </div>
 <div class="results" id="favs"></div>
+<p style="margin:8px;font-size:12px"><a href="https://github.com/TIKTOOOO/loon/tree/main/location-spoofer/source" target="_blank" rel="noopener noreferrer">源码与 AGPL-3.0 许可</a></p>
 <div class="toast" id="toast"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
 <script>
@@ -362,11 +364,12 @@ function load(){
       L.tileLayer("https://wprd0{s}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=8",{subdomains:"1234",maxZoom:18})
     ]);
     amapSat.datum="gcj";
-    var osm=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"});
+    var osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'});
     osm.datum="wgs";
 
     map=L.map("map");
-    amapVec.addTo(map); datum="gcj";
+    if(WGS.lng<72.004||WGS.lng>137.8347||WGS.lat<0.8293||WGS.lat>55.8271){osm.addTo(map);datum="wgs";}
+    else{amapVec.addTo(map);datum="gcj";}
     map.setView(dispPos(),13);
     L.control.layers({"高德地图":amapVec,"高德卫星":amapSat,"国外 OSM":osm},null,{collapsed:false}).addTo(map);
 

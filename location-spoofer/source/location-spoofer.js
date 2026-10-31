@@ -1133,7 +1133,7 @@
       return;
     }
     try {
-      $persistentStore.write("location_spoofer_geocode", JSON.stringify(entry));
+      $persistentStore.write(JSON.stringify(entry), "location_spoofer_geocode");
     } catch (err) {
       // ignore cache write failures
     }
@@ -1322,6 +1322,14 @@
     return cfg;
   }
 
+  function validRemoteConfig(data) {
+    if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+    if (data.enabled === false) return true;
+    return typeof data.latitude === "number" && typeof data.longitude === "number" &&
+      Number.isFinite(data.latitude) && Number.isFinite(data.longitude) &&
+      Math.abs(data.latitude) <= 90 && Math.abs(data.longitude) <= 180;
+  }
+
   function readRemoteConfigCache(url) {
     if (!url || typeof $persistentStore === "undefined" || !$persistentStore.read) {
       return null;
@@ -1332,7 +1340,7 @@
         return null;
       }
       var entry = JSON.parse(raw);
-      if (!entry || entry.url !== url || !entry.data) {
+      if (!entry || entry.url !== url || !validRemoteConfig(entry.data)) {
         return null;
       }
       if (Date.now() - entry.ts > 300000) {
@@ -1350,8 +1358,8 @@
     }
     try {
       $persistentStore.write(
-        "location_spoofer_remote_cfg",
-        JSON.stringify({ url: url, data: data, ts: Date.now() })
+        JSON.stringify({ url: url, data: data, ts: Date.now() }),
+        "location_spoofer_remote_cfg"
       );
     } catch (err) {
       // ignore cache write failures
@@ -1368,8 +1376,15 @@
         callback(null, error || "empty body");
         return;
       }
+      var status = String((response && (response.status || response.statusCode)) || "").match(/\b(\d{3})\b/);
+      if (status && (Number(status[1]) < 200 || Number(status[1]) >= 300)) {
+        callback(null, "remote HTTP error");
+        return;
+      }
       try {
-        callback(JSON.parse(body), null);
+        var data = JSON.parse(body);
+        if (!validRemoteConfig(data)) { callback(null, "invalid remote config"); return; }
+        callback(data, null);
       } catch (err) {
         callback(null, err.message);
       }
@@ -1471,12 +1486,6 @@
       return;
     }
 
-    if (readRemoteConfigCache(configUrl)) {
-      refreshRemoteConfigCache(configUrl, debug);
-      finish();
-      return;
-    }
-
     if (debug) {
       console.log("Location spoofer remote config fetching (credentials redacted)");
     }
@@ -1490,8 +1499,12 @@
             "Location spoofer remote config loaded -> " + data.latitude + "," + data.longitude
           );
         }
-      } else if (debug) {
-        console.log("Location spoofer remote config fetch failed (using manual lat/lng)");
+      } else {
+        if (cfg.configSource !== "remote-cache") {
+          cfg.enabled = false;
+          cfg.configSource = "remote-unavailable";
+        }
+        if (debug) console.log("Location spoofer remote config unavailable; using valid cache or pass-through");
       }
       finish();
     });

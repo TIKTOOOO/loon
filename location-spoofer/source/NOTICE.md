@@ -3,6 +3,8 @@
 本项目基于 mekos2772/ios-location-spoofer，初始提交 `06feaf2f2279ab966567f946d87ead9461564634`。
 原作者及贡献者版权、致谢及 AGPL-3.0 许可证完整保留。TIKTOOOO 维护修改包括：本地关闭优先、日志口令隐藏、独立 Cloudflare 接口、地图链接解析、更新及发布流程。
 
+同时修正 Loon 持久化存储写入参数顺序与远程刷新结束时机；远程配置不可用且无有效缓存时停止修改。
+
 坐标转换纯函数来源：xepes0/wloc，提交 `69f09f3ce9120632ad505c1952ff997857dd1cb8`，其历史和版权归原作者及贡献者；许可证见 `location-picker/worker/src/vendor/LICENSE`。
 
 运行脚本、Worker 与对应源码按 AGPL-3.0 发布。私库用于备份和维护，不代替公开发布对应源码的义务。

@@ -3,7 +3,7 @@ import { PAGE } from './page.js';
 import { parseMap } from './parse.js';
 const DEFAULT = { enabled: false, latitude: 37.3349, longitude: -122.00902,
   altitude: 530, horizontalAccuracy: 39, verticalAccuracy: 1000 };
-const headers = { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer',
+const headers = { 'Cache-Control': 'no-store', 'Referrer-Policy': 'origin',
   'X-Content-Type-Options': 'nosniff' };
 const csp = "default-src 'none'; script-src https://unpkg.com 'unsafe-inline'; style-src https://unpkg.com 'unsafe-inline'; img-src 'self' https: data:; connect-src 'self' https://api.open-meteo.com https://nominatim.openstreetmap.org; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
